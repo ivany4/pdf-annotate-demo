@@ -1,7 +1,8 @@
 import PDFJS from 'pdfjs-dist';
+import './pdf-annotate-missing/pdf_viewer';
 import PDFJSAnnotate from 'pdf-annotate';
-const pdfViewer = require('pdfjs-dist/web/pdf_viewer');
-PDFJS.DefaultTextLayerFactory = () => {};//pdfViewer.DefaultTextLayerFactory;
+//const pdfViewer = require('pdfjs-dist/web/pdf_viewer');
+//PDFJS.DefaultTextLayerFactory = () => {};//pdfViewer.DefaultTextLayerFactory;
 
 const { UI, LocalStoreAdapter } = PDFJSAnnotate;
 const RENDER_OPTIONS = {
@@ -10,17 +11,19 @@ const RENDER_OPTIONS = {
   scale: 1,
   rotate: 0
 };
-const storeAdapter = LocalStoreAdapter;
-storeAdapter.getAnnotations = () => [];
-
+const storeAdapter = new LocalStoreAdapter();
+const VIEWER = document.getElementById('viewer');
 PDFJS.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
 PDFJSAnnotate.setStoreAdapter(storeAdapter);
 
 PDFJS.getDocument(RENDER_OPTIONS.documentId).then((pdf) => {
-  const VIEWER = document.getElementById('viewer');
   RENDER_OPTIONS.pdfDocument = pdf;
   VIEWER.appendChild(UI.createPage(1));
-  UI.renderPage(1, RENDER_OPTIONS);
+    UI.renderPage(1, RENDER_OPTIONS).then((pdfPage, annotations) => {
+        console.log("Annotations: " + JSON.stringify(annotations))
+    });
+    UI.enableEdit();
+    //UI.createEditOverlay(VIEWER);
 });
 /*
 
