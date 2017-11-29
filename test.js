@@ -6,14 +6,14 @@ import PDFJSAnnotate from 'pdf-annotate';
 
 const { UI, LocalStoreAdapter } = PDFJSAnnotate;
 const RENDER_OPTIONS = {
-  documentId: '//cdn.mozilla.net/pdfjs/helloworld.pdf',
+  documentId: 'https://cdn.mozilla.net/pdfjs/helloworld.pdf',
   pdfDocument: null,
   scale: 1,
   rotate: 0
 };
 const storeAdapter = new LocalStoreAdapter();
 const VIEWER = document.getElementById('viewer');
-PDFJS.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+PDFJS.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
 PDFJSAnnotate.setStoreAdapter(storeAdapter);
 
 PDFJS.getDocument(RENDER_OPTIONS.documentId).then((pdf) => {
