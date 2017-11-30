@@ -19,17 +19,19 @@ const VIEWER = document.getElementById('viewer');
 PDFJS.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
 PDFJSAnnotate.setStoreAdapter(storeAdapter);
 
-
-PDFJS.getDocument(RENDER_OPTIONS.documentId).then((pdf) => {
-  RENDER_OPTIONS.pdfDocument = pdf;
-  VIEWER.appendChild(UI.createPage(1));
-    UI.renderPage(1, RENDER_OPTIONS).then((pdfPage, annotations) => {
-        console.log("Annotations: " + JSON.stringify(annotations))
+function render() {
+    PDFJS.getDocument(RENDER_OPTIONS.documentId).then((pdf) => {
+      RENDER_OPTIONS.pdfDocument = pdf;
+      NUM_PAGES = pdf.pdfInfo.numPages;
+      VIEWER.appendChild(UI.createPage(1));
+        UI.renderPage(1, RENDER_OPTIONS).then((pdfPage, annotations) => {
+            console.log("Annotations: " + JSON.stringify(annotations))
+        });
+        UI.enableEdit();
+        //UI.createEditOverlay(VIEWER);
     });
-    UI.enableEdit();
-    //UI.createEditOverlay(VIEWER);
-});
-
+}
+render();
 
 // Text stuff
 (function () {
@@ -226,6 +228,42 @@ function handleToolbarClick(e) {
 }
 
 document.querySelector('.toolbar').addEventListener('click', handleToolbarClick);
+
+// Scale/rotate
+(function () {
+  function setScaleRotate(scale, rotate) {
+    scale = parseFloat(scale, 10);
+    rotate = parseInt(rotate, 10);
+
+    if (RENDER_OPTIONS.scale !== scale || RENDER_OPTIONS.rotate !== rotate) {
+      RENDER_OPTIONS.scale = scale;
+      RENDER_OPTIONS.rotate = rotate;
+
+      localStorage.setItem('${RENDER_OPTIONS.documentId}/scale', RENDER_OPTIONS.scale);
+      localStorage.setItem('${RENDER_OPTIONS.documentId}/rotate', RENDER_OPTIONS.rotate % 360);
+      
+      render();
+
+    }
+  }
+
+  function handleScaleChange(e) {
+    setScaleRotate(e.target.value, RENDER_OPTIONS.rotate);
+  }
+
+  function handleRotateCWClick() {
+    setScaleRotate(RENDER_OPTIONS.scale, RENDER_OPTIONS.rotate + 90);
+  }
+
+  function handleRotateCCWClick() {
+    setScaleRotate(RENDER_OPTIONS.scale, RENDER_OPTIONS.rotate - 90);
+  }
+
+  document.querySelector('.toolbar select.scale').value = RENDER_OPTIONS.scale;
+  document.querySelector('.toolbar select.scale').addEventListener('change', handleScaleChange);
+  document.querySelector('.toolbar .rotate-ccw').addEventListener('click', handleRotateCCWClick);
+  document.querySelector('.toolbar .rotate-cw').addEventListener('click', handleRotateCWClick);
+})();
 
 /*
 
