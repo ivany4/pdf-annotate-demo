@@ -22,7 +22,6 @@ PDFJSAnnotate.setStoreAdapter(storeAdapter);
 function render() {
     PDFJS.getDocument(RENDER_OPTIONS.documentId).then((pdf) => {
       RENDER_OPTIONS.pdfDocument = pdf;
-      NUM_PAGES = pdf.pdfInfo.numPages;
       VIEWER.appendChild(UI.createPage(1));
         UI.renderPage(1, RENDER_OPTIONS).then((pdfPage, annotations) => {
             console.log("Annotations: " + JSON.stringify(annotations))
