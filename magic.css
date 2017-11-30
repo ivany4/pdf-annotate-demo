@@ -8,3 +8,12 @@ html, body, #viewer {
 html {
     height: auto;
 }
+
+.annotationLayer {
+    position: absolute;
+    top: 0;
+}
+
+.page {
+    position: relative;
+}
