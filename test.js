@@ -1,20 +1,24 @@
 import PDFJS from 'pdfjs-dist';
 import './pdf-annotate-missing/pdf_viewer';
 import PDFJSAnnotate from 'pdf-annotate';
+import initColorPicker from './pdf-annotate-missing/initColorPicker';
 //const pdfViewer = require('pdfjs-dist/web/pdf_viewer');
 //PDFJS.DefaultTextLayerFactory = () => {};//pdfViewer.DefaultTextLayerFactory;
 
+
+
 const { UI, LocalStoreAdapter } = PDFJSAnnotate;
 const RENDER_OPTIONS = {
-  documentId: '//cdn.mozilla.net/pdfjs/helloworld.pdf',
+  documentId: 'https://cdn.mozilla.net/pdfjs/helloworld.pdf',
   pdfDocument: null,
-  scale: 1,
-  rotate: 0
+  scale: parseFloat(localStorage.getItem('${documentId}/scale'), 10) || 1.33,
+  rotate: parseInt(localStorage.getItem('${documentId}/rotate'), 10) || 0
 };
 const storeAdapter = new LocalStoreAdapter();
 const VIEWER = document.getElementById('viewer');
-PDFJS.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+PDFJS.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
 PDFJSAnnotate.setStoreAdapter(storeAdapter);
+
 
 PDFJS.getDocument(RENDER_OPTIONS.documentId).then((pdf) => {
   RENDER_OPTIONS.pdfDocument = pdf;
@@ -25,6 +29,204 @@ PDFJS.getDocument(RENDER_OPTIONS.documentId).then((pdf) => {
     UI.enableEdit();
     //UI.createEditOverlay(VIEWER);
 });
+
+
+// Text stuff
+(function () {
+  let textSize;
+  let textColor;
+
+  function initText() {
+    let size = document.querySelector('.toolbar .text-size');
+    [8, 9, 10, 11, 12, 14, 18, 24, 30, 36, 48, 60, 72, 96].forEach((s) => {
+      size.appendChild(new Option (s, s));
+    });
+
+    setText(
+      localStorage.getItem('${RENDER_OPTIONS.documentId}/text/size') || 10,
+      localStorage.getItem('${RENDER_OPTIONS.documentId}/text/color') || '#000000'
+    );
+
+    initColorPicker(document.querySelector('.text-color'), textColor, function (value) {
+      setText(textSize, value);
+    });
+  }
+
+  function setText(size, color) {
+    let modified = false;
+
+    if (textSize !== size) {
+      modified = true;
+      textSize = size;
+      localStorage.setItem('${RENDER_OPTIONS.documentId}/text/size', textSize);
+      document.querySelector('.toolbar .text-size').value = textSize;
+    }
+
+    if (textColor !== color) {
+      modified = true;
+      textColor = color;
+      localStorage.setItem('${RENDER_OPTIONS.documentId}/text/color', textColor);
+
+      let selected = document.querySelector('.toolbar .text-color.color-selected');
+      if (selected) {
+        selected.classList.remove('color-selected');
+        selected.removeAttribute('aria-selected');
+      }
+
+      selected = document.querySelector('.toolbar .text-color[data-color="${color}"]');
+      if (selected) {
+        selected.classList.add('color-selected');
+        selected.setAttribute('aria-selected', true);
+      }
+
+    }
+
+    if (modified) {
+      UI.setText(textSize, textColor);
+    }
+  }
+
+  function handleTextSizeChange(e) {
+    setText(e.target.value, textColor);
+  }
+
+  document.querySelector('.toolbar .text-size').addEventListener('change', handleTextSizeChange);
+
+  initText();
+})();
+
+// Pen stuff
+(function () {
+  let penSize;
+  let penColor;
+
+  function initPen() {
+    let size = document.querySelector('.toolbar .pen-size');
+    for (let i=0; i<20; i++) {
+      size.appendChild(new Option(i+1, i+1));
+    }
+
+    setPen(
+      localStorage.getItem('${RENDER_OPTIONS.documentId}/pen/size') || 1,
+      localStorage.getItem('${RENDER_OPTIONS.documentId}/pen/color') || '#000000'
+    );
+
+    initColorPicker(document.querySelector('.pen-color'), penColor, function (value) {
+      setPen(penSize, value);
+    });
+  }
+
+  function setPen(size, color) {
+    let modified = false;
+
+    if (penSize !== size) {
+      modified = true;
+      penSize = size;
+      localStorage.setItem('${RENDER_OPTIONS.documentId}/pen/size', penSize);
+      document.querySelector('.toolbar .pen-size').value = penSize;
+    }
+
+    if (penColor !== color) {
+      modified = true;
+      penColor = color;
+      localStorage.setItem('${RENDER_OPTIONS.documentId}/pen/color', penColor);
+
+      let selected = document.querySelector('.toolbar .pen-color.color-selected');
+      if (selected) {
+        selected.classList.remove('color-selected');
+        selected.removeAttribute('aria-selected');
+      }
+
+      selected = document.querySelector('.toolbar .pen-color[data-color="${color}"]');
+      if (selected) {
+        selected.classList.add('color-selected');
+        selected.setAttribute('aria-selected', true);
+      }
+    }
+
+    if (modified) {
+      UI.setPen(penSize, penColor);
+    }
+  }
+
+  function handlePenSizeChange(e) {
+    setPen(e.target.value, penColor);
+  }
+
+  document.querySelector('.toolbar .pen-size').addEventListener('change', handlePenSizeChange);
+
+  initPen();
+})();
+
+// Toolbar buttons
+let tooltype = localStorage.getItem('${RENDER_OPTIONS.documentId}/tooltype') || 'cursor'; // document.getElementsByClassName("highlight")["0"].dataset.tooltype
+if (tooltype) {
+    setActiveToolbarItem(tooltype, document.querySelector('.toolbar button[data-tooltype=' + tooltype + ']'));
+}
+
+function setActiveToolbarItem(type, button) {
+    let active = document.querySelector('.toolbar button.active');
+    if (active) {
+      active.classList.remove('active');
+
+      switch (tooltype) {
+	case 'cursor':
+	  UI.disableEdit();
+	  break;
+	case 'draw':
+	  UI.disablePen();
+	  break;
+	case 'text':
+	  UI.disableText();
+	  break;
+	case 'point':
+	  UI.disablePoint();
+	  break;
+	case 'area':
+	case 'highlight':
+	case 'strikeout':
+	  UI.disableRect();
+	  break;
+      }
+    }
+
+    if (button) {
+	button.classList.add('active');
+    }
+    if (tooltype !== type) {
+	localStorage.setItem('${RENDER_OPTIONS.documentId}/tooltype', type);
+    }
+    tooltype = type;
+
+    switch (type) {
+      case 'cursor':
+        UI.enableEdit();
+        break;
+      case 'draw':
+        UI.enablePen();
+        break;
+      case 'text':
+        UI.enableText();
+        break;
+      case 'point':
+        UI.enablePoint();
+        break;
+      case 'area':
+      case 'highlight':
+      case 'strikeout':
+        UI.enableRect(type);
+        break;
+    }
+}
+
+function handleToolbarClick(e) {
+    if (e.target.nodeName === 'BUTTON') {
+      setActiveToolbarItem(e.target.getAttribute('data-tooltype'), e.target);
+    }
+}
+
+document.querySelector('.toolbar').addEventListener('click', handleToolbarClick);
+
 /*
 
 // If absolute URL from the remote server is provided, configure the CORS
